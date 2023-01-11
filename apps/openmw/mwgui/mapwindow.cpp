@@ -454,9 +454,9 @@ namespace MWGui
         updateCustomMarkers();
     }
 
-    void LocalMapBase::requestMapRender(const MWWorld::CellStore* cell)
+    void LocalMapBase::requestMapRender(const MWWorld::CellStore* cell, bool dumpMap)
     {
-        mLocalMapRender->requestMap(cell);
+        mLocalMapRender->requestMap(cell, dumpMap);
     }
 
     void LocalMapBase::redraw()

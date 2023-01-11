@@ -948,7 +948,7 @@ namespace MWGui
 
     void WindowManager::changeCell(const MWWorld::CellStore* cell)
     {
-        mMap->requestMapRender(cell);
+        mMap->requestMapRender(cell, true);
 
         std::string name{ MWBase::Environment::get().getWorld()->getCellName(cell) };
 

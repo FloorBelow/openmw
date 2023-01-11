@@ -50,7 +50,7 @@ namespace MWRender
          * Request a map render for the given cell. Render textures will be immediately created and can be retrieved
          * with the getMapTexture function.
          */
-        void requestMap(const MWWorld::CellStore* cell);
+        void requestMap(const MWWorld::CellStore* cell, bool dumpMap = false);
 
         void addCell(MWWorld::CellStore* cell);
         void removeExteriorCell(int x, int y);
@@ -143,7 +143,7 @@ namespace MWRender
         float mAngle;
         const osg::Vec2f rotatePoint(const osg::Vec2f& point, const osg::Vec2f& center, const float angle);
 
-        void requestExteriorMap(const MWWorld::CellStore* cell);
+        void requestExteriorMap(const MWWorld::CellStore* cell, bool dumpMap = false);
         void requestInteriorMap(const MWWorld::CellStore* cell);
 
         void setupRenderToTexture(

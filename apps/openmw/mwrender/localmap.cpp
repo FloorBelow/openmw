@@ -32,6 +32,7 @@
 #include "../mwworld/cellstore.hpp"
 
 #include "vismask.hpp"
+#include <osgDB\WriteFile>
 
 namespace
 {
@@ -49,6 +50,22 @@ namespace
         const int segsY = static_cast<int>(std::ceil(length.y() / mapSize));
         return { segsX, segsY };
     }
+
+    class LocalMapExportCallback : public osg::Camera::DrawCallback
+    {
+    public:
+        LocalMapExportCallback(std::string filename, osg::Image* image)
+            : mFilename(filename)
+            , mImage(image)
+        {
+        }
+
+        virtual void operator()(osg::RenderInfo& renderInfo) const { osgDB::writeImageFile(*mImage, mFilename); }
+
+    protected:
+        std::string mFilename;
+        osg::Image* mImage;
+    };
 }
 
 namespace MWRender
@@ -180,7 +197,7 @@ namespace MWRender
         segment.mMapTexture = static_cast<osg::Texture2D*>(mLocalMapRTTs.back()->getColorTexture(nullptr));
     }
 
-    void LocalMap::requestMap(const MWWorld::CellStore* cell)
+    void LocalMap::requestMap(const MWWorld::CellStore* cell, bool dumpMap)
     {
         if (cell->isExterior())
         {
@@ -192,7 +209,7 @@ namespace MWRender
                 return;
             else
             {
-                requestExteriorMap(cell);
+                requestExteriorMap(cell, dumpMap);
                 segment.needUpdate = false;
             }
         }
@@ -255,7 +272,7 @@ namespace MWRender
         }
     }
 
-    void LocalMap::requestExteriorMap(const MWWorld::CellStore* cell)
+    void LocalMap::requestExteriorMap(const MWWorld::CellStore* cell, bool dumpMap)
     {
         mInterior = false;
 
@@ -269,6 +286,20 @@ namespace MWRender
         setupRenderToTexture(cell->getCell()->getGridX(), cell->getCell()->getGridY(),
             x * mMapWorldSize + mMapWorldSize / 2.f, y * mMapWorldSize + mMapWorldSize / 2.f, osg::Vec3d(0, 1, 0), zmin,
             zmax);
+
+        if (dumpMap)
+        {
+            auto camera = mLocalMapRTTs.back()->getCamera(nullptr);
+            osg::ref_ptr<osg::Image> exportImage = new osg::Image;
+            exportImage->allocateImage(mMapResolution, mMapResolution, 1, GL_RGB, GL_UNSIGNED_BYTE);
+            camera->attach(osg::Camera::COLOR_BUFFER, exportImage);
+            std::ostringstream stream;
+
+            stream << "F:\\Anna\\Desktop\\maps\\" << MWBase::Environment::get().getWorld()->getCellName(cell) << "." << x << "." << y << ".bmp";
+            camera->setFinalDrawCallback(new LocalMapExportCallback(stream.str(), exportImage));
+
+        }
+
 
         MapSegment& segment
             = mExteriorSegments[std::make_pair(cell->getCell()->getGridX(), cell->getCell()->getGridY())];
@@ -739,12 +770,15 @@ namespace MWRender
         stateset->addUniform(new osg::Uniform("screenRes", osg::Vec2f{ 1, 1 }));
 
         osg::ref_ptr<osg::LightModel> lightmodel = new osg::LightModel;
-        lightmodel->setAmbientIntensity(osg::Vec4(0.3f, 0.3f, 0.3f, 1.f));
+        lightmodel->setAmbientIntensity(osg::Vec4(0.267f, 0.294f, 0.376f, 1.f));
+        //lightmodel->setAmbientIntensity(osg::Vec4(0.3f, 0.3f, 0.3f, 1.f));
         stateset->setAttributeAndModes(lightmodel, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
 
         osg::ref_ptr<osg::Light> light = new osg::Light;
-        light->setPosition(osg::Vec4(-0.3f, -0.3f, 0.7f, 0.f));
-        light->setDiffuse(osg::Vec4(0.7f, 0.7f, 0.7f, 1.f));
+        light->setPosition(osg::Vec4(-0.5f, -0.3f, 0.7f, 0.f));
+        //light->setPosition(osg::Vec4(-0.3f, -0.3f, 0.7f, 0.f));
+        light->setDiffuse(osg::Vec4(1.f, 0.925f, 0.867f, 1.f));
+        //light->setDiffuse(osg::Vec4(0.7f, 0.7f, 0.7f, 1.f));
         light->setAmbient(osg::Vec4(0, 0, 0, 1));
         light->setSpecular(osg::Vec4(0, 0, 0, 0));
         light->setLightNum(0);
