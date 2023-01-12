@@ -70,8 +70,8 @@ namespace SceneUtil
 
         osg::ref_ptr<osg::Material> material(new osg::Material);
         material->setEmission(osg::Material::FRONT_AND_BACK, osg::Vec4f(0.f, 0.f, 0.f, 1.f));
-        material->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4f(1.f, 1.f, 1.f, alpha));
-        material->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4f(1.f, 1.f, 1.f, 1.f));
+        material->setDiffuse(osg::Material::FRONT_AND_BACK,osg::Vec4f(0.047f * 0.6f + 0.4f, 0.118f * 0.6f + 0.4f, 0.145f * 0.6f + 0.4f, alpha));
+        material->setAmbient(osg::Material::FRONT_AND_BACK,osg::Vec4f(0.f, 0.f, 0.f, 1.f));
         material->setColorMode(osg::Material::OFF);
         stateset->setAttributeAndModes(material, osg::StateAttribute::ON);
 

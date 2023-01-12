@@ -295,7 +295,7 @@ namespace MWRender
             camera->attach(osg::Camera::COLOR_BUFFER, exportImage);
             std::ostringstream stream;
 
-            stream << "F:\\Anna\\Desktop\\maps\\" << MWBase::Environment::get().getWorld()->getCellName(cell) << "." << x << "." << y << ".bmp";
+            stream << "C:\\maps\\" << MWBase::Environment::get().getWorld()->getCellName(cell) << "." << x << "." << y << ".bmp";
             camera->setFinalDrawCallback(new LocalMapExportCallback(stream.str(), exportImage));
 
         }
@@ -775,9 +775,11 @@ namespace MWRender
         stateset->setAttributeAndModes(lightmodel, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
 
         osg::ref_ptr<osg::Light> light = new osg::Light;
-        light->setPosition(osg::Vec4(-0.5f, -0.3f, 0.7f, 0.f));
+        light->setPosition(osg::Vec4(-0.5f, -0.1f, 0.5f, 0.f));
         //light->setPosition(osg::Vec4(-0.3f, -0.3f, 0.7f, 0.f));
-        light->setDiffuse(osg::Vec4(1.f, 0.925f, 0.867f, 1.f));
+        light->setDiffuse(osg::Vec4(0.9f, 0.8325f, 0.7803f, 1.f));
+        //light->setDiffuse(osg::Vec4(1.f, 0.925f, 0.867f, 1.f));
+
         //light->setDiffuse(osg::Vec4(0.7f, 0.7f, 0.7f, 1.f));
         light->setAmbient(osg::Vec4(0, 0, 0, 1));
         light->setSpecular(osg::Vec4(0, 0, 0, 0));

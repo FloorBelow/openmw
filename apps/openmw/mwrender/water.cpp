@@ -598,7 +598,7 @@ namespace MWRender
 
         // Add animated textures
         std::vector<osg::ref_ptr<osg::Texture2D>> textures;
-        const int frameCount = std::clamp(Fallback::Map::getInt("Water_SurfaceFrameCount"), 0, 320);
+        const int frameCount = std::clamp(Fallback::Map::getInt("Water_SurfaceFrameCount"), 0, 1);
         std::string_view texture = Fallback::Map::getString("Water_SurfaceTexture");
         for (int i = 0; i < frameCount; ++i)
         {
