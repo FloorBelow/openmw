@@ -458,9 +458,23 @@ namespace MWRender
                 std::string cellName = std::string(MWBase::Environment::get().getWorld()->getCellName(cell));
                 std::replace(cellName.begin(), cellName.end(), ':', ';');
 
-                stream << "C:\\mapsint\\" << cellName << "." << x << "."
-                       << y << ".bmp";
-                camera->setFinalDrawCallback(new LocalMapExportCallback(stream.str(), exportImage));
+                stream << "E:\\mapsint\\" << cellName << "." << x << "." << y << ".png";
+                camera->addFinalDrawCallback(new LocalMapExportCallback(stream.str(), exportImage));
+
+                //depth image, for removing water mostly
+                osg::ref_ptr<osg::Image> depthImage = new osg::Image;
+                depthImage->allocateImage(mMapResolution, mMapResolution, 1, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT);
+                camera->attach(osg::Camera::PACKED_DEPTH_STENCIL_BUFFER, depthImage);
+                std::ostringstream stream2;
+                stream2 << "E:\\mapsintdepth\\" << cellName << "." << x << "." << y << ".png";
+                camera->addFinalDrawCallback(new LocalMapExportCallback(stream2.str(), depthImage));
+
+
+                // exportImage->allocateImage(mMapResolution, mMapResolution, 1, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT);
+                // camera->attach(osg::Camera::PACKED_DEPTH_STENCIL_BUFFER, exportImage);
+
+
+
 
 
 
@@ -749,7 +763,7 @@ namespace MWRender
         camera->setComputeNearFarMode(osg::Camera::DO_NOT_COMPUTE_NEAR_FAR);
         camera->setReferenceFrame(osg::Camera::ABSOLUTE_RF_INHERIT_VIEWPOINT);
         camera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT, osg::Camera::PIXEL_BUFFER_RTT);
-        camera->setClearColor(osg::Vec4(0.f, 0.f, 0.f, 1.f));
+        camera->setClearColor(osg::Vec4(0.f, 0.f, 0.f, 0.f));
         camera->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         camera->setRenderOrder(osg::Camera::PRE_RENDER);
 
