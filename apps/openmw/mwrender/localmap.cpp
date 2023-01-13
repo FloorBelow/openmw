@@ -364,7 +364,7 @@ namespace MWRender
         // Do NOT change padding! This will break older savegames.
         // If the padding really needs to be changed, then it must be saved in the ESM::FogState and
         // assume the old (500) value as default for older savegames.
-        const float padding = 500.0f;
+        const float padding = 256.0f;
 
         // Apply a little padding
         mBounds.set(mBounds._min - osg::Vec3f(padding, padding, 0.f), mBounds._max + osg::Vec3f(padding, padding, 0.f));
@@ -449,6 +449,20 @@ namespace MWRender
                 osg::Vec2f pos = osg::Vec2f(rotatedCenter.x(), rotatedCenter.y()) + center;
 
                 setupRenderToTexture(x, y, pos.x(), pos.y(), osg::Vec3f(north.x(), north.y(), 0.f), zMin, zMax);
+
+                auto camera = mLocalMapRTTs.back()->getCamera(nullptr);
+                osg::ref_ptr<osg::Image> exportImage = new osg::Image;
+                exportImage->allocateImage(mMapResolution, mMapResolution, 1, GL_RGB, GL_UNSIGNED_BYTE);
+                camera->attach(osg::Camera::COLOR_BUFFER, exportImage);
+                std::ostringstream stream;
+                std::string cellName = std::string(MWBase::Environment::get().getWorld()->getCellName(cell));
+                std::replace(cellName.begin(), cellName.end(), ':', ';');
+
+                stream << "C:\\mapsint\\" << cellName << "." << x << "."
+                       << y << ".bmp";
+                camera->setFinalDrawCallback(new LocalMapExportCallback(stream.str(), exportImage));
+
+
 
                 auto coords = std::make_pair(x, y);
                 MapSegment& segment = mInteriorSegments[coords];
