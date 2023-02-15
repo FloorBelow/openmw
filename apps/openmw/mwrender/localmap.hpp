@@ -38,7 +38,7 @@ namespace MWRender
     class LocalMap
     {
     public:
-        LocalMap(osg::Group* root);
+        LocalMap(osg::Group* root, const std::filesystem::path& logpath);
         ~LocalMap();
 
         /**
@@ -151,6 +151,8 @@ namespace MWRender
 
         bool mInterior;
         osg::BoundingBox mBounds;
+
+        std::filesystem::path mLogpath;
     };
 
 }

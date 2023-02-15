@@ -94,13 +94,14 @@ namespace MWRender
         void operator()(LocalMapRenderToTexture* node, osg::NodeVisitor* nv);
     };
 
-    LocalMap::LocalMap(osg::Group* root)
+    LocalMap::LocalMap(osg::Group* root, const std::filesystem::path& logpath)
         : mRoot(root)
         , mMapResolution(Settings::Manager::getInt("local map resolution", "Map"))
         , mMapWorldSize(Constants::CellSizeInUnits)
         , mCellDistance(Constants::CellGridRadius)
         , mAngle(0.f)
         , mInterior(false)
+        , mLogpath(logpath)
     {
         // Increase map resolution, if use UI scaling
         float uiScale = MWBase::Environment::get().getWindowManager()->getScalingFactor();
@@ -205,7 +206,7 @@ namespace MWRender
             int cellY = cell->getCell()->getGridY();
 
             MapSegment& segment = mExteriorSegments[std::make_pair(cellX, cellY)];
-            if (!segment.needUpdate)
+            if (!segment.needUpdate && !dumpMap)
                 return;
             else
             {
@@ -295,9 +296,9 @@ namespace MWRender
             camera->attach(osg::Camera::COLOR_BUFFER, exportImage);
             std::ostringstream stream;
 
-            stream << "C:\\maps\\" << MWBase::Environment::get().getWorld()->getCellName(cell) << "." << x << "." << y << ".bmp";
+            stream << mLogpath.generic_string() << "maps/" << MWBase::Environment::get().getWorld()->getCellName(cell) << " (" << x << "," << y
+                   << ").bmp";
             camera->setFinalDrawCallback(new LocalMapExportCallback(stream.str(), exportImage));
-
         }
 
 
@@ -450,6 +451,7 @@ namespace MWRender
 
                 setupRenderToTexture(x, y, pos.x(), pos.y(), osg::Vec3f(north.x(), north.y(), 0.f), zMin, zMax);
 
+                //int map export
                 auto camera = mLocalMapRTTs.back()->getCamera(nullptr);
                 osg::ref_ptr<osg::Image> exportImage = new osg::Image;
                 exportImage->allocateImage(mMapResolution, mMapResolution, 1, GL_RGB, GL_UNSIGNED_BYTE);
@@ -458,18 +460,19 @@ namespace MWRender
                 std::string cellName = std::string(MWBase::Environment::get().getWorld()->getCellName(cell));
                 std::replace(cellName.begin(), cellName.end(), ':', ';');
 
-                stream << "E:\\mapsint\\" << cellName << "." << x << "." << y << ".png";
+                //stream << "E:\\mapsint\\" << cellName << "." << x << "." << y << ".bmp";
+                stream << mLogpath.generic_string() << "mapsint/" << cellName << " (" << x << "," << y << ").bmp";
                 camera->addFinalDrawCallback(new LocalMapExportCallback(stream.str(), exportImage));
 
                 //depth image, for removing water mostly
+                /*
                 osg::ref_ptr<osg::Image> depthImage = new osg::Image;
                 depthImage->allocateImage(mMapResolution, mMapResolution, 1, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT);
                 camera->attach(osg::Camera::PACKED_DEPTH_STENCIL_BUFFER, depthImage);
                 std::ostringstream stream2;
                 stream2 << "E:\\mapsintdepth\\" << cellName << "." << x << "." << y << ".png";
                 camera->addFinalDrawCallback(new LocalMapExportCallback(stream2.str(), depthImage));
-
-
+                */
                 // exportImage->allocateImage(mMapResolution, mMapResolution, 1, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT);
                 // camera->attach(osg::Camera::PACKED_DEPTH_STENCIL_BUFFER, exportImage);
 

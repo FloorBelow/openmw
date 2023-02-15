@@ -177,6 +177,7 @@ namespace MWGui
         , mEncoding(encoding)
         , mVersionDescription(versionDescription)
         , mWindowVisible(true)
+        , mLogpath(logpath)
     {
         int w, h;
         SDL_GetWindowSize(window, &w, &h);
@@ -303,7 +304,7 @@ namespace MWGui
         mGuiModeStates[GM_MainMenu] = GuiModeState(menu.get());
         mWindows.push_back(std::move(menu));
 
-        mLocalMapRender = std::make_unique<MWRender::LocalMap>(mViewer->getSceneData()->asGroup());
+        mLocalMapRender = std::make_unique<MWRender::LocalMap>(mViewer->getSceneData()->asGroup(), mLogpath);
         auto map = std::make_unique<MapWindow>(mCustomMarkers, mDragAndDrop.get(), mLocalMapRender.get(), mWorkQueue);
         mMap = map.get();
         mWindows.push_back(std::move(map));

@@ -467,6 +467,8 @@ namespace MWGui
 
         int mPlayerBounty;
 
+        std::filesystem::path mLogpath;
+
         void setCursorVisible(bool visible) override;
 
         std::unique_ptr<MyGUI::Gui> mGui; // Gui
