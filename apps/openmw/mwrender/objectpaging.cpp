@@ -569,6 +569,7 @@ namespace MWRender
             std::vector<const ESM::CellRef*> mInstances;
             AnalyzeVisitor::Result mAnalyzeResult;
             bool mNeedCompile = false;
+            bool mNoAnalyze = false;
         };
         typedef std::map<osg::ref_ptr<const osg::Node>, InstanceList> NodeMap;
         NodeMap nodes;
@@ -637,21 +638,29 @@ namespace MWRender
                 }
             }
 
+            bool whitelisted = false;
             if (!activeGrid)
             {
+                std::string lodModel;
                 std::lock_guard<std::mutex> lock(mLODNameCacheMutex);
                 LODNameCacheKey key{ model, lod };
                 LODNameCache::const_iterator found = mLODNameCache.lower_bound(key);
                 if (found != mLODNameCache.end() && found->first == key)
-                    model = found->second;
+                    lodModel = found->second;
                 else
-                    model = mLODNameCache
+                    lodModel = mLODNameCache
                                 .insert(found,
                                     { key,
                                         Misc::ResourceHelpers::getLODMeshName(
                                             world->getESMVersions()[ref.mRefNum.mContentFile], model,
                                             mSceneManager->getVFS(), lod) })
                                 ->second;
+                if (model.compare(lodModel) != 0)
+                {
+                    model = lodModel;
+                    whitelisted = true;
+                }
+                
             }
 
             osg::ref_ptr<const osg::Node> cnode = mSceneManager->getTemplate(model, false);
@@ -675,7 +684,7 @@ namespace MWRender
             }
 
             float radius2 = cnode->getBound().radius2() * ref.mScale * ref.mScale;
-            if (radius2 < dSqr * minSize * minSize && !activeGrid)
+            if (!whitelisted && radius2 < dSqr * minSize * minSize && !activeGrid)
             {
                 std::lock_guard<std::mutex> lock(mSizeCacheMutex);
                 mSizeCache[pair.first] = radius2;
@@ -691,6 +700,8 @@ namespace MWRender
                         analyzeVisitor); // const-trickery required because there is no const version of NodeVisitor
                 emplaced.first->second.mAnalyzeResult = analyzeVisitor.retrieveResult();
                 emplaced.first->second.mNeedCompile = compile && cnode->referenceCount() <= 3;
+                emplaced.first->second.mNoAnalyze = whitelisted;
+
             }
             else
                 analyzeVisitor.addInstance(emplaced.first->second.mAnalyzeResult);
@@ -725,10 +736,10 @@ namespace MWRender
                 const ESM::CellRef& ref = *cref;
                 osg::Vec3f pos = ref.mPos.asVec3();
 
-                if (!activeGrid && minSizeMerged != minSize
-                    && cnode->getBound().radius2() * cref->mScale * cref->mScale
-                        < (viewPoint - pos).length2() * minSizeMerged * minSizeMerged)
-                    continue;
+                //if (!pair.second.mNoAnalyze && !activeGrid && minSizeMerged != minSize
+                //    && cnode->getBound().radius2() * cref->mScale * cref->mScale
+                //        < (viewPoint - pos).length2() * minSizeMerged * minSizeMerged)
+                //    continue;
 
                 osg::Vec3f nodePos = pos - worldCenter;
                 osg::Quat nodeAttitude = osg::Quat(ref.mPos.rot[2], osg::Vec3f(0, 0, -1))
