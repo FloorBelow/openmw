@@ -70,8 +70,9 @@ namespace Terrain
             dist = std::max(0.f, dist + mDistanceModifier);
             if (dist > mViewDistance && !activeGrid) // for Scene<->ObjectPaging sync the activegrid must remain loaded
                 return StopTraversal;
-            return getNativeLodLevel(node, mMinSize)
-                    <= convertDistanceToLodLevel(dist, mMinSize, mFactor, mCellSizeInUnits)
+            return (getNativeLodLevel(node, mMinSize)
+                        <= convertDistanceToLodLevel(dist, mMinSize, mFactor, mCellSizeInUnits))
+                    && (node->getSize() <= 8)
                 ? StopTraversalAndUse
                 : Deeper;
         }
