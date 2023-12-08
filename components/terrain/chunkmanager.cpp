@@ -194,6 +194,8 @@ namespace Terrain
     {
         osg::ref_ptr<TerrainDrawable> geometry(new TerrainDrawable);
 
+        bool useCompositeMap = chunkSize >= mCompositeMapLevel;
+
         if (!templateGeometry)
         {
             osg::ref_ptr<osg::Vec3Array> positions(new osg::Vec3Array);
@@ -201,7 +203,8 @@ namespace Terrain
             osg::ref_ptr<osg::Vec4ubArray> colors(new osg::Vec4ubArray);
             colors->setNormalize(true);
 
-            mStorage->fillVertexBuffers(lod, chunkSize, chunkCenter, mWorldspace, *positions, *normals, *colors);
+            mStorage->fillVertexBuffers(
+                lod, chunkSize, chunkCenter, mWorldspace, *positions, *normals, *colors, useCompositeMap);
 
             osg::ref_ptr<osg::VertexBufferObject> vbo(new osg::VertexBufferObject);
             positions->setVertexBufferObject(vbo);
@@ -242,7 +245,6 @@ namespace Terrain
 
         geometry->addPrimitiveSet(mBufferCache.getIndexBuffer(numVerts, lodFlags));
 
-        bool useCompositeMap = chunkSize >= mCompositeMapLevel;
         unsigned int numUvSets = useCompositeMap ? 1 : 2;
 
         geometry->setTexCoordArrayList(osg::Geometry::ArrayList(numUvSets, mBufferCache.getUVBuffer(numVerts)));

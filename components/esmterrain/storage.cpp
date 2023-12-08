@@ -238,7 +238,7 @@ namespace ESMTerrain
     }
 
     void Storage::fillVertexBuffers(int lodLevel, float size, const osg::Vec2f& center, ESM::RefId worldspace,
-        osg::Vec3Array& positions, osg::Vec3Array& normals, osg::Vec4ubArray& colours)
+        osg::Vec3Array& positions, osg::Vec3Array& normals, osg::Vec4ubArray& colours, bool useCompositeMap)
     {
         if (lodLevel < 0 || 63 < lodLevel)
             throw std::invalid_argument("Invalid terrain lod level: " + std::to_string(lodLevel));
@@ -340,17 +340,20 @@ namespace ESMTerrain
 
             osg::Vec4ub color(255, 255, 255, 255);
 
-            if (colourData != nullptr)
-                for (std::size_t i = 0; i < 3; ++i)
-                    color[i] = colourData->getColors()[srcArrayIndex + i];
+            if (!useCompositeMap)
+            {
+                if (colourData != nullptr)
+                    for (std::size_t i = 0; i < 3; ++i)
+                        color[i] = colourData->getColors()[srcArrayIndex + i];
 
-            // Does nothing by default, override in OpenMW-CS
-            if (alteration)
-                adjustColor(col, row, heightData, color);
+                // Does nothing by default, override in OpenMW-CS
+                if (alteration)
+                    adjustColor(col, row, heightData, color);
 
-            // Unlike normals, colors mostly connect seamlessly between cells, but not always...
-            if (col == cellSize - 1 || row == cellSize - 1)
-                fixColour(color, cellLocation, col, row, cache);
+                // Unlike normals, colors mostly connect seamlessly between cells, but not always...
+                if (col == cellSize - 1 || row == cellSize - 1)
+                    fixColour(color, cellLocation, col, row, cache);
+            }
 
             colours[vertIndex] = color;
         };

@@ -64,7 +64,7 @@ namespace Terrain
         /// @param normals buffer to write vertex normals
         /// @param colours buffer to write vertex colours
         virtual void fillVertexBuffers(int lodLevel, float size, const osg::Vec2f& center, ESM::RefId worldspace,
-            osg::Vec3Array& positions, osg::Vec3Array& normals, osg::Vec4ubArray& colours)
+            osg::Vec3Array& positions, osg::Vec3Array& normals, osg::Vec4ubArray& colours, bool useCompositeMap)
             = 0;
 
         typedef std::vector<osg::ref_ptr<osg::Image>> ImageVector;
