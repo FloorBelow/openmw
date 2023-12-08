@@ -16,6 +16,10 @@
 #include "terraindrawable.hpp"
 #include "texturemanager.hpp"
 
+#include <components\debug\debuglog.hpp>
+#include <osg/BlendFunc>
+
+
 namespace Terrain
 {
 
@@ -93,38 +97,147 @@ namespace Terrain
         return texture;
     }
 
-    void ChunkManager::createCompositeMapGeometry(
-        float chunkSize, const osg::Vec2f& chunkCenter, const osg::Vec4f& texCoords, CompositeMap& compositeMap)
+    void ChunkManager::createCompositeMapGeometry(int lod, float chunkSize, const osg::Vec2f& chunkCenter,
+        const osg::Vec4f& texCoords, CompositeMap& compositeMap)
     {
         if (chunkSize > mMaxCompGeometrySize)
         {
-            createCompositeMapGeometry(chunkSize / 2.f, chunkCenter + osg::Vec2f(chunkSize / 4.f, chunkSize / 4.f),
+            createCompositeMapGeometry(lod, chunkSize / 2.f, chunkCenter + osg::Vec2f(chunkSize / 4.f, chunkSize / 4.f),
                 osg::Vec4f(
                     texCoords.x() + texCoords.z() / 2.f, texCoords.y(), texCoords.z() / 2.f, texCoords.w() / 2.f),
                 compositeMap);
-            createCompositeMapGeometry(chunkSize / 2.f, chunkCenter + osg::Vec2f(-chunkSize / 4.f, chunkSize / 4.f),
+            createCompositeMapGeometry(lod, chunkSize / 2.f,
+                chunkCenter + osg::Vec2f(-chunkSize / 4.f, chunkSize / 4.f),
                 osg::Vec4f(texCoords.x(), texCoords.y(), texCoords.z() / 2.f, texCoords.w() / 2.f), compositeMap);
-            createCompositeMapGeometry(chunkSize / 2.f, chunkCenter + osg::Vec2f(chunkSize / 4.f, -chunkSize / 4.f),
+            createCompositeMapGeometry(lod, chunkSize / 2.f,
+                chunkCenter + osg::Vec2f(chunkSize / 4.f, -chunkSize / 4.f),
                 osg::Vec4f(texCoords.x() + texCoords.z() / 2.f, texCoords.y() + texCoords.w() / 2.f,
                     texCoords.z() / 2.f, texCoords.w() / 2.f),
                 compositeMap);
-            createCompositeMapGeometry(chunkSize / 2.f, chunkCenter + osg::Vec2f(-chunkSize / 4.f, -chunkSize / 4.f),
+            createCompositeMapGeometry(lod, chunkSize / 2.f,
+                chunkCenter + osg::Vec2f(-chunkSize / 4.f, -chunkSize / 4.f),
                 osg::Vec4f(
                     texCoords.x(), texCoords.y() + texCoords.w() / 2.f, texCoords.z() / 2.f, texCoords.w() / 2.f),
                 compositeMap);
         }
         else
         {
+            //float left = texCoords.x() * 2.f - 1;
+            //float top = texCoords.y() * 2.f - 1;
+            //float width = texCoords.z() * 2.f;
+            //float height = texCoords.w() * 2.f;
+
+            float posX = texCoords.x() * 2.f - 1 + texCoords.z();
+            float posY = texCoords.y() * 2.f - 1 + texCoords.w();
+            float width = texCoords.z() * 2.f;
+            float height = texCoords.w() * -2.f;
+
+            int compositeMapLod = 0; //lod > 1 ? 1 : 0;
+
+            osg::Vec4 geomKey = osg::Vec4(chunkSize, posX, posY, width);
+
+            osg::ref_ptr<osg::Geometry> templateGeom;
+            std::map<osg::Vec4f, osg::ref_ptr<osg::Geometry>>::iterator found
+                = mCompositeMapGeometryCache.find(geomKey);
+            if (found != mCompositeMapGeometryCache.end())
+            {
+                templateGeom = found->second;
+            }
+            else
+            {
+                Log(Debug::Info) << "CREATING TEMPLATE GEOM " << texCoords.x() << " " << texCoords.y() << " "
+                                 << texCoords.z() << " " << texCoords.w();
+
+                unsigned int numVerts = ((mStorage->getCellVertices(mWorldspace) - 1) >> compositeMapLod) * chunkSize + 1;
+                
+                //const std::size_t sampleSize = std::size_t{ 1 } << compositeMapLod;
+                //const std::size_t cellSize = static_cast<std::size_t>(ESM::getLandSize(mWorldspace));
+                //const std::size_t numVerts = static_cast<std::size_t>(chunkSize * (cellSize - 1) / sampleSize) + 1;
+
+                osg::ref_ptr<osg::Vec3Array> positions = new osg::Vec3Array(numVerts * numVerts);
+                for (int vertY = 0; vertY < numVerts; vertY++)
+                {
+                    for (int vertX = 0; vertX < numVerts; vertX++)
+                    {
+                        (*positions)[vertY + vertX * numVerts]
+                            = osg::Vec3f((vertX / static_cast<float>(numVerts - 1) - 0.5f) * width + posX,
+                                (vertY / static_cast<float>(numVerts - 1) - 0.5f) * height + posY, 0);
+                    }
+                }
+                //osg::ref_ptr<osg::Vec4ubArray> colors(new osg::Vec4ubArray);
+
+                //osg::ref_ptr<osg::Vec4ubArray> colors = new osg::Vec4ubArray(1);
+                //(*colors)[0].set(255, 255, 255, 255);
+
+                osg::ref_ptr<osg::Vec2Array> uvs = mBufferCache.getUVBuffer(numVerts);
+                osg::ref_ptr<osg::DrawElements> tris = mBufferCache.getIndexBuffer(numVerts, 0);
+
+
+                templateGeom = new osg::Geometry;
+                templateGeom->setVertexArray(positions);
+                //templateGeom->setColorArray(colors, osg::Array::BIND_OVERALL);
+                templateGeom->setTexCoordArray(0, uvs);
+                templateGeom->addPrimitiveSet(tris);
+
+                mCompositeMapGeometryCache[geomKey] = templateGeom;
+            }
+
+
             float left = texCoords.x() * 2.f - 1;
             float top = texCoords.y() * 2.f - 1;
-            float width = texCoords.z() * 2.f;
-            float height = texCoords.w() * 2.f;
+            float width2 = texCoords.z() * 2.f;
+            float height2 = texCoords.w() * 2.f;
+
+
+            osg::ref_ptr<osg::Vec4ubArray> colors = new osg::Vec4ubArray();
+            mStorage->fillVertexBuffersCompositeMap(compositeMapLod, chunkSize, chunkCenter, mWorldspace, *colors);
 
             std::vector<osg::ref_ptr<osg::StateSet>> passes = createPasses(chunkSize, chunkCenter, true);
             for (std::vector<osg::ref_ptr<osg::StateSet>>::iterator it = passes.begin(); it != passes.end(); ++it)
             {
+                //auto corner = osg::Vec3(left, top, 0);
+                //auto widthVec = osg::Vec3(width, 0, 0);
+                //auto heightVec = osg::Vec3(0, height, 0);
+
+               
                 osg::ref_ptr<osg::Geometry> geom = osg::createTexturedQuadGeometry(
-                    osg::Vec3(left, top, 0), osg::Vec3(width, 0, 0), osg::Vec3(0, height, 0));
+                osg::Vec3(left, top, 0), osg::Vec3(width2, 0, 0), osg::Vec3(0, height2, 0));
+               
+                //osg::Vec3Array* coords = new osg::Vec3Array(numVerts * numVerts);
+
+                /*
+                osg::Vec3Array* coords = new osg::Vec3Array(4);
+                (*coords)[0] = corner + heightVec;
+                (*coords)[1] = corner;
+                (*coords)[2] = corner + widthVec;
+                (*coords)[3] = corner + widthVec + heightVec;
+
+                //(*tcoords)[0].set(0, 1);
+                //(*tcoords)[1].set(0, 0);
+                //(*tcoords)[2].set(1, 0);
+                //(*tcoords)[3].set(1, 1);
+
+                osg::Vec4Array* colours = new osg::Vec4Array(1);
+                (*colours)[0].set(1.0f, 0.0f, 0.0, 1.0f);
+                geom->setColorArray(colours, osg::Array::BIND_OVERALL);
+
+                osg::Vec3Array* normals = new osg::Vec3Array(1);
+                (*normals)[0] = widthVec ^ heightVec;
+                (*normals)[0].normalize();
+                geom->setNormalArray(normals, osg::Array::BIND_OVERALL);
+
+                osg::DrawElementsUByte* elems = new osg::DrawElementsUByte(osg::PrimitiveSet::TRIANGLES);
+                elems->push_back(0);
+                elems->push_back(1);
+                elems->push_back(2);
+
+                elems->push_back(2);
+                elems->push_back(3);
+                elems->push_back(0);
+                geom->addPrimitiveSet(elems);
+                */
+
+
                 geom->setUseDisplayList(
                     false); // don't bother making a display list for an object that is just rendered once.
                 geom->setUseVertexBufferObjects(false);
@@ -134,7 +247,39 @@ namespace Terrain
 
                 compositeMap.mDrawables.emplace_back(geom);
             }
+
+            {
+                
+                osg::ref_ptr<osg::Geometry> geom = new osg::Geometry();
+                geom->setVertexArray(templateGeom->getVertexArray());
+                geom->setColorArray(colors, osg::Array::BIND_PER_VERTEX);
+                geom->addPrimitiveSet(templateGeom->getPrimitiveSet(0));
+                
+                //osg::ref_ptr<osg::Geometry> geom = osg::createTexturedQuadGeometry(
+                //    osg::Vec3(left, top, 0), osg::Vec3(width2 / 2, 0, 0), osg::Vec3(0, height2 / 2, 0));
+
+                //osg::Vec4Array* colours2 = new osg::Vec4Array(1);
+                //(*colours2)[0].set(1.0f, 0.0f, 0.0, 1.0f);
+                //geom->setColorArray(colours2, osg::Array::BIND_OVERALL);
+
+
+                geom->setUseDisplayList(false);
+                geom->setUseVertexBufferObjects(false);
+                //geom->setTexCoordArray(1, geom->getTexCoordArray(0), osg::Array::BIND_PER_VERTEX);
+
+                osg::ref_ptr<osg::StateSet> stateset(new osg::StateSet);
+                stateset->setMode(GL_BLEND, osg::StateAttribute::ON);
+                stateset->setAttributeAndModes(new osg::BlendFunc(osg::BlendFunc::ZERO, osg::BlendFunc::SRC_COLOR), osg::StateAttribute::ON);
+
+                geom->setStateSet(stateset);
+
+                compositeMap.mDrawables.emplace_back(geom);
+
+            }
         }
+
+        
+        
     }
 
     std::vector<osg::ref_ptr<osg::StateSet>> ChunkManager::createPasses(
@@ -194,6 +339,10 @@ namespace Terrain
     {
         osg::ref_ptr<TerrainDrawable> geometry(new TerrainDrawable);
 
+        bool useCompositeMap = chunkSize >= mCompositeMapLevel;
+        unsigned int numUvSets = useCompositeMap ? 1 : 2;
+
+
         if (!templateGeometry)
         {
             osg::ref_ptr<osg::Vec3Array> positions(new osg::Vec3Array);
@@ -201,7 +350,7 @@ namespace Terrain
             osg::ref_ptr<osg::Vec4ubArray> colors(new osg::Vec4ubArray);
             colors->setNormalize(true);
 
-            mStorage->fillVertexBuffers(lod, chunkSize, chunkCenter, mWorldspace, *positions, *normals, *colors);
+            mStorage->fillVertexBuffers(lod, chunkSize, chunkCenter, mWorldspace, *positions, *normals, *colors, useCompositeMap);
 
             osg::ref_ptr<osg::VertexBufferObject> vbo(new osg::VertexBufferObject);
             positions->setVertexBufferObject(vbo);
@@ -242,8 +391,6 @@ namespace Terrain
 
         geometry->addPrimitiveSet(mBufferCache.getIndexBuffer(numVerts, lodFlags));
 
-        bool useCompositeMap = chunkSize >= mCompositeMapLevel;
-        unsigned int numUvSets = useCompositeMap ? 1 : 2;
 
         geometry->setTexCoordArrayList(osg::Geometry::ArrayList(numUvSets, mBufferCache.getUVBuffer(numVerts)));
 
@@ -267,7 +414,7 @@ namespace Terrain
                 osg::ref_ptr<CompositeMap> compositeMap = new CompositeMap;
                 compositeMap->mTexture = createCompositeMapRTT();
 
-                createCompositeMapGeometry(chunkSize, chunkCenter, osg::Vec4f(0, 0, 1, 1), *compositeMap);
+                createCompositeMapGeometry(lod, chunkSize, chunkCenter, osg::Vec4f(0, 0, 1, 1), *compositeMap);
 
                 mCompositeMapRenderer->addCompositeMap(compositeMap.get(), false);
 

@@ -100,7 +100,7 @@ namespace Terrain
 
         osg::ref_ptr<osg::Texture2D> createCompositeMapRTT();
 
-        void createCompositeMapGeometry(
+        void createCompositeMapGeometry(int lod,
             float chunkSize, const osg::Vec2f& chunkCenter, const osg::Vec4f& texCoords, CompositeMap& map);
 
         std::vector<osg::ref_ptr<osg::StateSet>> createPasses(
@@ -113,6 +113,8 @@ namespace Terrain
         BufferCache mBufferCache;
 
         osg::ref_ptr<osg::StateSet> mMultiPassRoot;
+
+        std::map<osg::Vec4f, osg::ref_ptr<osg::Geometry>> mCompositeMapGeometryCache;
 
         unsigned int mNodeMask;
 

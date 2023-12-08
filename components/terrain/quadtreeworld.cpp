@@ -72,7 +72,6 @@ namespace Terrain
                 return StopTraversal;
             return (getNativeLodLevel(node, mMinSize)
                         <= convertDistanceToLodLevel(dist, mMinSize, mFactor, mCellSizeInUnits))
-                    && (node->getSize() <= 8)
                 ? StopTraversalAndUse
                 : Deeper;
         }
