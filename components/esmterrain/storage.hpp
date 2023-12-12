@@ -99,7 +99,7 @@ namespace ESMTerrain
         /// @param normals buffer to write vertex normals
         /// @param colours buffer to write vertex colours
         void fillVertexBuffers(int lodLevel, float size, const osg::Vec2f& center, ESM::RefId worldspace,
-            osg::Vec3Array& positions, osg::Vec3Array& normals, osg::Vec4ubArray& colours, bool useCompositeMap) override;
+            osg::Vec3Array& positions, osg::Vec3Array& normals, osg::Vec4ubArray& colours, bool useVertexColors) override;
 
         void fillVertexBuffersCompositeMap(int lodLevel, float size, const osg::Vec2f& center, ESM::RefId worldspace,
             const osg::Vec4f& texCoords, osg::Vec3Array& positions, osg::Vec4ubArray& colours) override;

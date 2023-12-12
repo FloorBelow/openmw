@@ -231,7 +231,7 @@ namespace Terrain
             colors->setNormalize(true);
 
             mStorage->fillVertexBuffers(
-                lod, chunkSize, chunkCenter, mWorldspace, *positions, *normals, *colors, useCompositeMap);
+                lod, chunkSize, chunkCenter, mWorldspace, *positions, *normals, *colors, !useCompositeMap);
 
             osg::ref_ptr<osg::VertexBufferObject> vbo(new osg::VertexBufferObject);
             positions->setVertexBufferObject(vbo);

@@ -238,7 +238,7 @@ namespace ESMTerrain
     }
 
     void Storage::fillVertexBuffers(int lodLevel, float size, const osg::Vec2f& center, ESM::RefId worldspace,
-        osg::Vec3Array& positions, osg::Vec3Array& normals, osg::Vec4ubArray& colours, bool useCompositeMap)
+        osg::Vec3Array& positions, osg::Vec3Array& normals, osg::Vec4ubArray& colours, bool useVertexColors)
     {
         if (lodLevel < 0 || 63 < lodLevel)
             throw std::invalid_argument("Invalid terrain lod level: " + std::to_string(lodLevel));
@@ -340,7 +340,7 @@ namespace ESMTerrain
 
             osg::Vec4ub color(255, 255, 255, 255);
 
-            if (!useCompositeMap)
+            if (useVertexColors)
             {
                 if (colourData != nullptr)
                     for (std::size_t i = 0; i < 3; ++i)
