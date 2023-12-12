@@ -368,6 +368,96 @@ namespace ESMTerrain
             std::fill(positions.begin(), positions.end(), osg::Vec3f());
     }
 
+    void Storage::fillVertexBuffersCompositeMap(int lodLevel, float size, const osg::Vec2f& center, ESM::RefId worldspace,
+        const osg::Vec4f& texCoords, osg::Vec3Array& positions, osg::Vec4ubArray& colours)
+    {
+        if (lodLevel < 0 || 63 < lodLevel)
+            throw std::invalid_argument("Invalid terrain lod level: " + std::to_string(lodLevel));
+
+        if (size <= 0)
+            throw std::invalid_argument("Invalid terrain size: " + std::to_string(size));
+
+        // LOD level n means every 2^n-th vertex is kept
+        const std::size_t sampleSize = std::size_t{ 1 } << lodLevel;
+        const std::size_t cellSize = static_cast<std::size_t>(ESM::getLandSize(worldspace));
+        const std::size_t numVerts = static_cast<std::size_t>(size * (cellSize - 1) / sampleSize) + 1;
+
+        positions.resize(numVerts * numVerts);
+        colours.resize(numVerts * numVerts);
+
+        float texCenterX = texCoords.x() * 2.f - 1 + texCoords.z();
+        float texCenterY = texCoords.y() * 2.f - 1 + texCoords.w();
+        float width = texCoords.z() * 2.f;
+        float height = texCoords.w() * 2.f;
+        for (int vertY = 0; vertY < numVerts; vertY++)
+        {
+            for (int vertX = 0; vertX < numVerts; vertX++)
+            {
+                positions[vertY + vertX * numVerts]
+                    = osg::Vec3f((vertX / static_cast<float>(numVerts - 1) - 0.5f) * width + texCenterX,
+                        (vertY / static_cast<float>(numVerts - 1) - 0.5f) * height * -1 + texCenterY, 0);
+            }
+        }
+
+        const osg::Vec2f origin = center - osg::Vec2f(size, size) * 0.5f;
+        const int startCellX = static_cast<int>(std::floor(origin.x()));
+        const int startCellY = static_cast<int>(std::floor(origin.y()));
+        LandCache cache(startCellX - 1, startCellY - 1, static_cast<std::size_t>(std::ceil(size)) + 2);
+        std::pair lastCell{ startCellX, startCellY };
+        const LandObject* land = getLand(ESM::ExteriorCellLocation(startCellX, startCellY, worldspace), cache);
+
+        const ESM::LandData* colourData = nullptr;
+
+        if (land != nullptr)
+        {
+            colourData = land->getData(ESM::Land::DATA_VCLR);
+        }
+
+        const auto handleSample = [&](std::size_t cellShiftX, std::size_t cellShiftY, std::size_t row, std::size_t col,
+                                      std::size_t vertX, std::size_t vertY) {
+            const int cellX = startCellX + cellShiftX;
+            const int cellY = startCellY + cellShiftY;
+            const std::pair cell{ cellX, cellY };
+            const ESM::ExteriorCellLocation cellLocation(cellX, cellY, worldspace);
+
+            if (lastCell != cell)
+            {
+                land = getLand(cellLocation, cache);
+
+                colourData = nullptr;
+
+                if (land != nullptr)
+                {
+                    colourData = land->getData(ESM::Land::DATA_VCLR);
+                }
+
+                lastCell = cell;
+            }
+
+            const std::size_t vertIndex = vertX * numVerts + vertY;
+
+            const std::size_t srcArrayIndex = col * cellSize * 3 + row * 3;
+
+            osg::Vec4ub color(255, 255, 255, 255);
+
+            if (colourData != nullptr)
+                for (std::size_t i = 0; i < 3; ++i)
+                    color[i] = colourData->getColors()[srcArrayIndex + i];
+
+            // Unlike normals, colors mostly connect seamlessly between cells, but not always...
+            if (col == cellSize - 1 || row == cellSize - 1)
+                fixColour(color, cellLocation, col, row, cache);
+            
+            colours[vertIndex] = color;
+        };
+
+        const std::size_t beginX = static_cast<std::size_t>((origin.x() - startCellX) * cellSize);
+        const std::size_t beginY = static_cast<std::size_t>((origin.y() - startCellY) * cellSize);
+        const std::size_t distance = static_cast<std::size_t>(size * (cellSize - 1)) + 1;
+
+        sampleCellGrid(cellSize, sampleSize, beginX, beginY, distance, handleSample);
+    }
+
     std::string Storage::getTextureName(UniqueTextureId id)
     {
         static constexpr char defaultTexture[] = "textures\\_land_default.dds";

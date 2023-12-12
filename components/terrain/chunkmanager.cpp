@@ -2,6 +2,7 @@
 
 #include <osg/Material>
 #include <osg/Texture2D>
+#include <osg/BlendFunc>
 
 #include <osgUtil/IncrementalCompileOperation>
 
@@ -134,6 +135,32 @@ namespace Terrain
 
                 compositeMap.mDrawables.emplace_back(geom);
             }
+
+            const int vertexColorLod = 0;
+            const unsigned int numVerts
+                = ((mStorage->getCellVertices(mWorldspace) - 1) >> vertexColorLod) * chunkSize + 1;
+
+            osg::ref_ptr<osg::Vec3Array> positions(new osg::Vec3Array);
+            osg::ref_ptr<osg::Vec4ubArray> colors(new osg::Vec4ubArray);
+            osg::ref_ptr<osg::DrawElements> tris = mBufferCache.getIndexBuffer(numVerts, 0);
+            mStorage->fillVertexBuffersCompositeMap(
+                vertexColorLod, chunkSize, chunkCenter, mWorldspace, texCoords, *positions, *colors);
+
+            osg::ref_ptr<osg::Geometry> vclrGeom = new osg::Geometry();
+            vclrGeom->setVertexArray(positions);
+            vclrGeom->setColorArray(colors, osg::Array::BIND_PER_VERTEX);
+            vclrGeom->addPrimitiveSet(tris);
+            vclrGeom->setUseDisplayList(false);
+            vclrGeom->setUseVertexBufferObjects(false);
+
+            osg::ref_ptr<osg::StateSet> vclrStateSet(new osg::StateSet);
+            vclrStateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
+            vclrStateSet->setAttributeAndModes(
+                new osg::BlendFunc(osg::BlendFunc::ZERO, osg::BlendFunc::SRC_COLOR), osg::StateAttribute::ON);
+
+            vclrGeom->setStateSet(vclrStateSet);
+
+            compositeMap.mDrawables.emplace_back(vclrGeom);  
         }
     }
 

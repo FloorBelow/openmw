@@ -67,6 +67,10 @@ namespace Terrain
             osg::Vec3Array& positions, osg::Vec3Array& normals, osg::Vec4ubArray& colours, bool useCompositeMap)
             = 0;
 
+        virtual void fillVertexBuffersCompositeMap(int lodLevel, float size, const osg::Vec2f& center,
+            ESM::RefId worldspace, const osg::Vec4f& texCoords, osg::Vec3Array& positions, osg::Vec4ubArray& colours)
+            = 0;
+
         typedef std::vector<osg::ref_ptr<osg::Image>> ImageVector;
         /// Create textures holding layer blend values for a terrain chunk.
         /// @note The terrain chunk shouldn't be larger than one cell since otherwise we might
