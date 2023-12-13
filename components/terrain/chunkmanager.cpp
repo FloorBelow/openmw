@@ -95,24 +95,26 @@ namespace Terrain
     }
 
     void ChunkManager::createCompositeMapGeometry(
-        float chunkSize, const osg::Vec2f& chunkCenter, const osg::Vec4f& texCoords, CompositeMap& compositeMap)
+        float chunkSize, const osg::Vec2f& chunkCenter, const osg::Vec4f& texCoords, 
+        CompositeMap& compositeMap, CompositeMap& compositeNormalMap)
     {
         if (chunkSize > mMaxCompGeometrySize)
         {
             createCompositeMapGeometry(chunkSize / 2.f, chunkCenter + osg::Vec2f(chunkSize / 4.f, chunkSize / 4.f),
                 osg::Vec4f(
                     texCoords.x() + texCoords.z() / 2.f, texCoords.y(), texCoords.z() / 2.f, texCoords.w() / 2.f),
-                compositeMap);
+                compositeMap, compositeNormalMap);
             createCompositeMapGeometry(chunkSize / 2.f, chunkCenter + osg::Vec2f(-chunkSize / 4.f, chunkSize / 4.f),
-                osg::Vec4f(texCoords.x(), texCoords.y(), texCoords.z() / 2.f, texCoords.w() / 2.f), compositeMap);
+                osg::Vec4f(texCoords.x(), texCoords.y(), texCoords.z() / 2.f, texCoords.w() / 2.f), compositeMap,
+                compositeNormalMap);
             createCompositeMapGeometry(chunkSize / 2.f, chunkCenter + osg::Vec2f(chunkSize / 4.f, -chunkSize / 4.f),
                 osg::Vec4f(texCoords.x() + texCoords.z() / 2.f, texCoords.y() + texCoords.w() / 2.f,
                     texCoords.z() / 2.f, texCoords.w() / 2.f),
-                compositeMap);
+                compositeMap, compositeNormalMap);
             createCompositeMapGeometry(chunkSize / 2.f, chunkCenter + osg::Vec2f(-chunkSize / 4.f, -chunkSize / 4.f),
                 osg::Vec4f(
                     texCoords.x(), texCoords.y() + texCoords.w() / 2.f, texCoords.z() / 2.f, texCoords.w() / 2.f),
-                compositeMap);
+                compositeMap, compositeNormalMap);
         }
         else
         {
@@ -141,10 +143,11 @@ namespace Terrain
                 = ((mStorage->getCellVertices(mWorldspace) - 1) >> vertexColorLod) * chunkSize + 1;
 
             osg::ref_ptr<osg::Vec3Array> positions(new osg::Vec3Array);
+            osg::ref_ptr<osg::Vec4ubArray> normals(new osg::Vec4ubArray);
             osg::ref_ptr<osg::Vec4ubArray> colors(new osg::Vec4ubArray);
             osg::ref_ptr<osg::DrawElements> tris = mBufferCache.getIndexBuffer(numVerts, 0);
             mStorage->fillVertexBuffersCompositeMap(
-                vertexColorLod, chunkSize, chunkCenter, mWorldspace, texCoords, *positions, *colors);
+                vertexColorLod, chunkSize, chunkCenter, mWorldspace, texCoords, *positions, *normals, *colors);
 
             osg::ref_ptr<osg::Geometry> vclrGeom = new osg::Geometry();
             vclrGeom->setVertexArray(positions);
@@ -157,10 +160,24 @@ namespace Terrain
             vclrStateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
             vclrStateSet->setAttributeAndModes(
                 new osg::BlendFunc(osg::BlendFunc::ZERO, osg::BlendFunc::SRC_COLOR), osg::StateAttribute::ON);
-
             vclrGeom->setStateSet(vclrStateSet);
 
             compositeMap.mDrawables.emplace_back(vclrGeom);  
+
+            osg::ref_ptr<osg::Geometry> normalGeom = new osg::Geometry();
+            normalGeom->setVertexArray(positions);
+            normalGeom->setColorArray(normals, osg::Array::BIND_PER_VERTEX);
+            normalGeom->addPrimitiveSet(tris);
+            normalGeom->setUseDisplayList(false);
+            normalGeom->setUseVertexBufferObjects(false);
+
+            osg::ref_ptr<osg::StateSet> normalStateSet(new osg::StateSet);
+            normalStateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
+            normalStateSet->setAttributeAndModes(
+                new osg::BlendFunc(osg::BlendFunc::ONE, osg::BlendFunc::ZERO), osg::StateAttribute::ON);
+            normalGeom->setStateSet(normalStateSet);
+
+            compositeNormalMap.mDrawables.emplace_back(normalGeom);  
         }
     }
 
@@ -296,15 +313,21 @@ namespace Terrain
                 osg::ref_ptr<CompositeMap> compositeMap = new CompositeMap;
                 compositeMap->mTexture = createCompositeMapRTT();
 
-                createCompositeMapGeometry(chunkSize, chunkCenter, osg::Vec4f(0, 0, 1, 1), *compositeMap);
+                osg::ref_ptr<CompositeMap> compositeNormalMap = new CompositeMap;
+                compositeNormalMap->mTexture = createCompositeMapRTT();
+
+                createCompositeMapGeometry(chunkSize, chunkCenter, osg::Vec4f(0, 0, 1, 1), *compositeMap, *compositeNormalMap);
 
                 mCompositeMapRenderer->addCompositeMap(compositeMap.get(), false);
+                mCompositeMapRenderer->addCompositeMap(compositeNormalMap.get(), false);
 
                 geometry->setCompositeMap(compositeMap);
+                geometry->setCompositeNormalMap(compositeNormalMap);
                 geometry->setCompositeMapRenderer(mCompositeMapRenderer);
 
                 TextureLayer layer;
                 layer.mDiffuseMap = compositeMap->mTexture;
+                layer.mNormalMap = compositeNormalMap->mTexture;
                 layer.mParallax = false;
                 layer.mSpecular = false;
                 geometry->setPasses(::Terrain::createPasses(

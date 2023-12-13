@@ -368,8 +368,9 @@ namespace ESMTerrain
             std::fill(positions.begin(), positions.end(), osg::Vec3f());
     }
 
-    void Storage::fillVertexBuffersCompositeMap(int lodLevel, float size, const osg::Vec2f& center, ESM::RefId worldspace,
-        const osg::Vec4f& texCoords, osg::Vec3Array& positions, osg::Vec4ubArray& colours)
+    void Storage::fillVertexBuffersCompositeMap(int lodLevel, float size, const osg::Vec2f& center, 
+        ESM::RefId worldspace, const osg::Vec4f& texCoords, 
+        osg::Vec3Array& positions, osg::Vec4ubArray& normals, osg::Vec4ubArray& colours)
     {
         if (lodLevel < 0 || 63 < lodLevel)
             throw std::invalid_argument("Invalid terrain lod level: " + std::to_string(lodLevel));
@@ -383,6 +384,7 @@ namespace ESMTerrain
         const std::size_t numVerts = static_cast<std::size_t>(size * (cellSize - 1) / sampleSize) + 1;
 
         positions.resize(numVerts * numVerts);
+        normals.resize(numVerts * numVerts);
         colours.resize(numVerts * numVerts);
 
         float texCenterX = texCoords.x() * 2.f - 1 + texCoords.z();
@@ -406,10 +408,12 @@ namespace ESMTerrain
         std::pair lastCell{ startCellX, startCellY };
         const LandObject* land = getLand(ESM::ExteriorCellLocation(startCellX, startCellY, worldspace), cache);
 
+        const ESM::LandData* normalData = nullptr;
         const ESM::LandData* colourData = nullptr;
 
         if (land != nullptr)
         {
+            normalData = land->getData(ESM::Land::DATA_VNML);
             colourData = land->getData(ESM::Land::DATA_VCLR);
         }
 
@@ -424,19 +428,47 @@ namespace ESMTerrain
             {
                 land = getLand(cellLocation, cache);
 
+                normalData = nullptr;
                 colourData = nullptr;
 
                 if (land != nullptr)
                 {
+                    normalData = land->getData(ESM::Land::DATA_VNML);
                     colourData = land->getData(ESM::Land::DATA_VCLR);
                 }
 
                 lastCell = cell;
             }
 
-            const std::size_t vertIndex = vertX * numVerts + vertY;
 
+            const std::size_t vertIndex = vertX * numVerts + vertY;
             const std::size_t srcArrayIndex = col * cellSize * 3 + row * 3;
+
+            osg::Vec3f normal(0, 0, 1);
+
+            if (normalData != nullptr)
+            {
+                for (std::size_t i = 0; i < 3; ++i)
+                    normal[i] = normalData->getNormals()[srcArrayIndex + i];
+
+                normal.normalize();
+            }
+
+            // Normals apparently don't connect seamlessly between cells
+            if (col == cellSize - 1 || row == cellSize - 1)
+                fixNormal(normal, cellLocation, col, row, cache);
+
+            // some corner normals appear to be complete garbage (z < 0)
+            if ((row == 0 || row == cellSize - 1) && (col == 0 || col == cellSize - 1))
+                averageNormal(normal, cellLocation, col, row, cache);
+
+            assert(normal.z() > 0);
+            normals[vertIndex]
+                = osg::Vec4ub(
+                    (char)((normal.x() / 2 + 0.5f) * 255), 
+                    (char)((normal.y() / 2 + 0.5f) * 255), 
+                    (char)((normal.z() / 2 + 0.5f) * 255),
+                    255);
 
             osg::Vec4ub color(255, 255, 255, 255);
 

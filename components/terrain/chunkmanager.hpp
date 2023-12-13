@@ -101,7 +101,7 @@ namespace Terrain
         osg::ref_ptr<osg::Texture2D> createCompositeMapRTT();
 
         void createCompositeMapGeometry(
-            float chunkSize, const osg::Vec2f& chunkCenter, const osg::Vec4f& texCoords, CompositeMap& map);
+            float chunkSize, const osg::Vec2f& chunkCenter, const osg::Vec4f& texCoords, CompositeMap& map, CompositeMap& compositeNormalMap);
 
         std::vector<osg::ref_ptr<osg::StateSet>> createPasses(
             float chunkSize, const osg::Vec2f& chunkCenter, bool forCompositeMap);

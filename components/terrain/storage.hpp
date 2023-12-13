@@ -68,7 +68,8 @@ namespace Terrain
             = 0;
 
         virtual void fillVertexBuffersCompositeMap(int lodLevel, float size, const osg::Vec2f& center,
-            ESM::RefId worldspace, const osg::Vec4f& texCoords, osg::Vec3Array& positions, osg::Vec4ubArray& colours)
+            ESM::RefId worldspace, const osg::Vec4f& texCoords, 
+            osg::Vec3Array& positions, osg::Vec4ubArray& normals, osg::Vec4ubArray& colours)
             = 0;
 
         typedef std::vector<osg::ref_ptr<osg::Image>> ImageVector;

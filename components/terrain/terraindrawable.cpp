@@ -95,6 +95,8 @@ namespace Terrain
         if (mCompositeMap && mCompositeMapRenderer)
         {
             mCompositeMapRenderer->setImmediate(mCompositeMap);
+            if (mCompositeNormalMap)
+                mCompositeMapRenderer->setImmediate(mCompositeNormalMap);
             mCompositeMapRenderer = nullptr;
         }
 

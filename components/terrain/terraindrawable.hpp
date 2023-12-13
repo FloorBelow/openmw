@@ -60,7 +60,9 @@ namespace Terrain
         const osg::BoundingBox& getWaterBoundingBox() const { return mWaterBoundingBox; }
 
         void setCompositeMap(CompositeMap* map) { mCompositeMap = map; }
+        void setCompositeNormalMap(CompositeMap* map) { mCompositeNormalMap = map; }
         CompositeMap* getCompositeMap() const { return mCompositeMap; }
+        CompositeMap* getCompositeNormalMap() const { return mCompositeNormalMap; }
         void setCompositeMapRenderer(CompositeMapRenderer* renderer) { mCompositeMapRenderer = renderer; }
 
     private:
@@ -71,6 +73,7 @@ namespace Terrain
 
         osg::ref_ptr<SceneUtil::LightListCallback> mLightListCallback;
         osg::ref_ptr<CompositeMap> mCompositeMap;
+        osg::ref_ptr<CompositeMap> mCompositeNormalMap;
         osg::ref_ptr<CompositeMapRenderer> mCompositeMapRenderer;
     };
 
