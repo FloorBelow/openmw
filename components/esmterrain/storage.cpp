@@ -365,6 +365,122 @@ namespace ESMTerrain
             std::fill(positions.begin(), positions.end(), osg::Vec3f());
     }
 
+    void Storage::createCompositeMapImages(
+        int lodLevel, float size, const osg::Vec2f& center, ESM::RefId worldspace, 
+        osg::Image& colorImage, osg::Image& normalImage)
+    {
+
+        if (lodLevel < 0 || 63 < lodLevel)
+            throw std::invalid_argument("Invalid terrain lod level: " + std::to_string(lodLevel));
+
+        if (size <= 0)
+            throw std::invalid_argument("Invalid terrain size: " + std::to_string(size));
+
+        // LOD level n means every 2^n-th vertex is kept
+        const std::size_t sampleSize = std::size_t{ 1 } << lodLevel;
+        const std::size_t cellSize = static_cast<std::size_t>(ESM::getLandSize(worldspace));
+        const std::size_t imageSize = static_cast<std::size_t>(size * (cellSize - 1) / sampleSize) + 1;
+
+        unsigned char* colors = new unsigned char[imageSize * imageSize * 3];
+        unsigned char* normals = new unsigned char[imageSize * imageSize * 3];
+
+        const bool alteration = useAlteration();
+        const int landSizeInUnits = ESM::getCellSize(worldspace);
+        const osg::Vec2f origin = center - osg::Vec2f(size, size) * 0.5f;
+        const int startCellX = static_cast<int>(std::floor(origin.x()));
+        const int startCellY = static_cast<int>(std::floor(origin.y()));
+        LandCache cache(startCellX - 1, startCellY - 1, static_cast<std::size_t>(std::ceil(size)) + 2);
+        std::pair lastCell{ startCellX, startCellY };
+        const LandObject* land = getLand(ESM::ExteriorCellLocation(startCellX, startCellY, worldspace), cache);
+        const ESM::LandData* normalData = nullptr;
+        const ESM::LandData* colourData = nullptr;
+
+        if (land != nullptr)
+        {
+            normalData = land->getData(ESM::Land::DATA_VNML);
+            colourData = land->getData(ESM::Land::DATA_VCLR);
+        }
+
+        const auto handleSample = [&](std::size_t cellShiftX, std::size_t cellShiftY, std::size_t row, std::size_t col,
+                                      std::size_t vertX, std::size_t vertY) {
+            const int cellX = startCellX + cellShiftX;
+            const int cellY = startCellY + cellShiftY;
+            const std::pair cell{ cellX, cellY };
+            const ESM::ExteriorCellLocation cellLocation(cellX, cellY, worldspace);
+
+            if (lastCell != cell)
+            {
+                land = getLand(cellLocation, cache);
+
+                normalData = nullptr;
+                colourData = nullptr;
+
+                if (land != nullptr)
+                {
+                    normalData = land->getData(ESM::Land::DATA_VNML);
+                    colourData = land->getData(ESM::Land::DATA_VCLR);
+                }
+
+                lastCell = cell;
+            }
+
+            const std::size_t vertIndex = vertX * imageSize + vertY;
+            const std::size_t srcArrayIndex = col * cellSize * 3 + row * 3;
+            const std::size_t dstArrayIndex = ((imageSize - vertY - 1) * imageSize + vertX) * 3;
+
+            osg::Vec3f normal(0, 0, 1);
+
+            if (normalData != nullptr)
+            {
+                for (std::size_t i = 0; i < 3; ++i)
+                    normal[i] = normalData->getNormals()[srcArrayIndex + i];
+
+                normal.normalize();
+            }
+
+            // Normals apparently don't connect seamlessly between cells
+            if (col == cellSize - 1 || row == cellSize - 1)
+                fixNormal(normal, cellLocation, col, row, cache);
+
+            // some corner normals appear to be complete garbage (z < 0)
+            if ((row == 0 || row == cellSize - 1) && (col == 0 || col == cellSize - 1))
+                averageNormal(normal, cellLocation, col, row, cache);
+
+            assert(normal.z() > 0);
+
+            normals[dstArrayIndex] = (unsigned char)((normal.x() / 2 + 0.5f) * 255);
+            normals[dstArrayIndex + 1] = (unsigned char)((normal.y() / 2 + 0.5f) * 255);
+            normals[dstArrayIndex + 2] = (unsigned char)((normal.z() / 2 + 0.5f) * 255);
+
+            osg::Vec4ub color(255, 255, 255, 255);
+
+            if (colourData != nullptr)
+                for (std::size_t i = 0; i < 3; ++i)
+                    color[i] = colourData->getColors()[srcArrayIndex + i];
+
+            // Unlike normals, colors mostly connect seamlessly between cells, but not always...
+            if (col == cellSize - 1 || row == cellSize - 1)
+                fixColour(color, cellLocation, col, row, cache);
+
+            colors[dstArrayIndex] = color.r();
+            colors[dstArrayIndex + 1] = color.g();
+            colors[dstArrayIndex + 2] = color.b();
+        };
+
+        const std::size_t beginX = static_cast<std::size_t>((origin.x() - startCellX) * cellSize);
+        const std::size_t beginY = static_cast<std::size_t>((origin.y() - startCellY) * cellSize);
+        const std::size_t distance = static_cast<std::size_t>(size * (cellSize - 1)) + 1;
+
+        sampleCellGrid(cellSize, sampleSize, beginX, beginY, distance, handleSample);
+
+        colorImage.setImage(imageSize, imageSize, 1, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, colors,
+            osg::Image::AllocationMode::USE_NEW_DELETE);
+
+
+        normalImage.setImage(imageSize, imageSize, 1, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, normals,
+            osg::Image::AllocationMode::USE_NEW_DELETE);
+    }
+
     std::string Storage::getTextureName(UniqueTextureId id)
     {
         static constexpr char defaultTexture[] = "textures\\_land_default.dds";

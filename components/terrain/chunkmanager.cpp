@@ -186,7 +186,7 @@ namespace Terrain
         float blendmapScale = mStorage->getBlendmapScale(chunkSize);
 
         return ::Terrain::createPasses(
-            useShaders, mSceneManager, layers, blendmapTextures, blendmapScale, blendmapScale);
+            useShaders, mSceneManager, layers, blendmapTextures, blendmapScale, blendmapScale, false);
     }
 
     osg::ref_ptr<osg::Node> ChunkManager::createChunk(float chunkSize, const osg::Vec2f& chunkCenter, unsigned char lod,
@@ -278,9 +278,44 @@ namespace Terrain
                 layer.mDiffuseMap = compositeMap->mTexture;
                 layer.mParallax = false;
                 layer.mSpecular = false;
-                geometry->setPasses(::Terrain::createPasses(
-                    mSceneManager->getForceShaders() || !mSceneManager->getClampLighting(), mSceneManager,
-                    std::vector<TextureLayer>(1, layer), std::vector<osg::ref_ptr<osg::Texture2D>>(), 1.f, 1.f));
+
+                if (lod > 0)
+                {
+                    osg::ref_ptr<osg::Image> colorImage(new osg::Image);
+                    osg::ref_ptr<osg::Image> normalImage(new osg::Image);
+                    mStorage->createCompositeMapImages(0, chunkSize, chunkCenter, mWorldspace, *colorImage, *normalImage);
+
+                    osg::ref_ptr<osg::Texture2D> colorTexture(new osg::Texture2D);
+                    colorTexture->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR_MIPMAP_LINEAR);
+                    colorTexture->setFilter(osg::Texture::MAG_FILTER, osg::Texture::LINEAR);
+                    colorTexture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
+                    colorTexture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
+                    colorTexture->setResizeNonPowerOfTwoHint(false);
+                    colorTexture->setImage(colorImage);
+                    
+                    osg::ref_ptr<osg::Texture2D> normalTexture(new osg::Texture2D);
+                    normalTexture->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR_MIPMAP_LINEAR);
+                    normalTexture->setFilter(osg::Texture::MAG_FILTER, osg::Texture::LINEAR);
+                    normalTexture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
+                    normalTexture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
+                    normalTexture->setResizeNonPowerOfTwoHint(false);
+                    normalTexture->setImage(normalImage);
+                    layer.mNormalMap = normalTexture;
+                 
+                    geometry->setPasses(
+                        ::Terrain::createPasses(mSceneManager->getForceShaders() || !mSceneManager->getClampLighting(), mSceneManager, std::vector<TextureLayer>(1, layer),
+                            std::vector<osg::ref_ptr<osg::Texture2D>>(1, colorTexture), 1.f, 1.f, true));
+                }
+                else
+                {
+                    geometry->setPasses(
+                        ::Terrain::createPasses(mSceneManager->getForceShaders() || !mSceneManager->getClampLighting(), 
+                            mSceneManager, std::vector<TextureLayer>(1, layer), 
+                            std::vector<osg::ref_ptr<osg::Texture2D>>(), 1.f, 1.f, true));
+                }
+
+
+
             }
             else
             {

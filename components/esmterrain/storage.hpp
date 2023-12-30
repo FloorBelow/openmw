@@ -101,6 +101,10 @@ namespace ESMTerrain
         void fillVertexBuffers(int lodLevel, float size, const osg::Vec2f& center, ESM::RefId worldspace,
             osg::Vec3Array& positions, osg::Vec3Array& normals, osg::Vec4ubArray& colours) override;
 
+        void createCompositeMapImages(int lodLevel, float size, const osg::Vec2f& center, ESM::RefId worldspace,
+            osg::Image& colorImage, osg::Image& normalImage) override;
+
+
         /// Create textures holding layer blend values for a terrain chunk.
         /// @note The terrain chunk shouldn't be larger than one cell since otherwise we might
         ///       have to do a ridiculous amount of different layers. For larger chunks, composite maps should be used.
