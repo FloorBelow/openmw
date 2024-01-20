@@ -52,15 +52,24 @@ void main()
     vec4 diffuseTex = texture2D(diffuseMap, adjustedUV);
     gl_FragData[0] = vec4(diffuseTex.xyz, 1.0);
 
+#if @compositeVcolMap
+    vec4 diffuseColor = texture2D(blendMap, adjustedUV);
+    vec4 ambientColor = diffuseColor;
+#else
     vec4 diffuseColor = getDiffuseColor();
+    vec4 ambientColor = getAmbientColor();
     gl_FragData[0].a *= diffuseColor.a;
-
+    
 #if @blendMap
     vec2 blendMapUV = (gl_TextureMatrix[1] * vec4(uv, 0.0, 1.0)).xy;
     gl_FragData[0].a *= texture2D(blendMap, blendMapUV).a;
 #endif
 
-#if @normalMap
+#endif
+
+#if @compositeNormalMap
+    vec3 viewNormal = normalize(gl_NormalMatrix * (texture2D(normalMap, adjustedUV).xyz * 2.0 - 1.0));
+#elif @normalMap
     vec3 viewNormal = normalToView(texture2D(normalMap, adjustedUV).xyz * 2.0 - 1.0);
 #else
     vec3 viewNormal = normalToView(normalize(passNormal));
@@ -73,7 +82,7 @@ void main()
 #else
     vec3 diffuseLight, ambientLight;
     doLighting(passViewPos, viewNormal, shadowing, diffuseLight, ambientLight);
-    lighting = diffuseColor.xyz * diffuseLight + getAmbientColor().xyz * ambientLight + getEmissionColor().xyz;
+    lighting = diffuseColor.xyz * diffuseLight + ambientColor.xyz * ambientLight + getEmissionColor().xyz;
 #endif
 
     clampLightingResult(lighting);

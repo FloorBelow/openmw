@@ -290,6 +290,7 @@ namespace Terrain
                     colorTexture->setFilter(osg::Texture::MAG_FILTER, osg::Texture::LINEAR);
                     colorTexture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
                     colorTexture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
+                    colorTexture->setLODBias(-1);
                     colorTexture->setResizeNonPowerOfTwoHint(false);
                     colorTexture->setImage(colorImage);
                     
