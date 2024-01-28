@@ -1324,12 +1324,17 @@ namespace MWRender
         {
             const int compMapResolution = Settings::terrain().mCompositeMapResolution;
             const int compMapPower = Settings::terrain().mCompositeMapLevel;
+            const bool compVcolMaps = Settings::terrain().mCompositeVcolBias;
+            const float compVcolMapBias = Settings::terrain().mCompositeVcolBias;
+            const bool compNormalMaps = Settings::terrain().mCompositeNormalMaps;
+
             const float compMapLevel = std::pow(2, compMapPower);
             const int vertexLodMod = Settings::terrain().mVertexLodMod;
             const float maxCompGeometrySize = Settings::terrain().mMaxCompositeGeometrySize;
             const bool debugChunks = Settings::terrain().mDebugChunks;
             auto quadTreeWorld = std::make_unique<Terrain::QuadTreeWorld>(mSceneRoot, mRootNode, mResourceSystem,
                 mTerrainStorage.get(), Mask_Terrain, Mask_PreCompile, Mask_Debug, compMapResolution, compMapLevel,
+                compVcolMaps, compVcolMapBias, compNormalMaps,
                 lodFactor, vertexLodMod, maxCompGeometrySize, debugChunks, worldspace, expiryDelay);
             if (Settings::terrain().mObjectPaging)
             {

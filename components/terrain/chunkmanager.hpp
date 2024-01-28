@@ -83,6 +83,10 @@ namespace Terrain
 
         void setCompositeMapSize(unsigned int size) { mCompositeMapSize = size; }
         void setCompositeMapLevel(float level) { mCompositeMapLevel = level; }
+        void setUseCompositeVcolMaps(bool b) { mUseCompositeNormalMaps = b; }
+        void setCompositeVcolMapBias(float bias) { mCompositeVcolMapBias = bias; }
+        void setUseCompositeNormalMaps(bool b) { mUseCompositeNormalMaps = b; }
+
         void setMaxCompositeGeometrySize(float maxCompGeometrySize) { mMaxCompGeometrySize = maxCompGeometrySize; }
 
         void setNodeMask(unsigned int mask) { mNodeMask = mask; }
@@ -119,6 +123,9 @@ namespace Terrain
         unsigned int mCompositeMapSize;
         float mCompositeMapLevel;
         float mMaxCompGeometrySize;
+        bool mUseCompositeVcolMaps;
+        float mCompositeVcolMapBias;
+        bool mUseCompositeNormalMaps;
     };
 
 }

@@ -279,18 +279,21 @@ namespace Terrain
                 layer.mParallax = false;
                 layer.mSpecular = false;
 
-                if (lod > 0)
+                if (lod > 0 && (mUseCompositeVcolMaps || mUseCompositeNormalMaps))
                 {
                     osg::ref_ptr<osg::Image> colorImage(new osg::Image);
                     osg::ref_ptr<osg::Image> normalImage(new osg::Image);
+
+                    //todo one or t'other
                     mStorage->createCompositeMapImages(0, chunkSize, chunkCenter, mWorldspace, *colorImage, *normalImage);
 
+                    
                     osg::ref_ptr<osg::Texture2D> colorTexture(new osg::Texture2D);
                     colorTexture->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR_MIPMAP_LINEAR);
                     colorTexture->setFilter(osg::Texture::MAG_FILTER, osg::Texture::LINEAR);
                     colorTexture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
                     colorTexture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
-                    colorTexture->setLODBias(-1);
+                    colorTexture->setLODBias(mCompositeVcolMapBias);
                     colorTexture->setResizeNonPowerOfTwoHint(false);
                     colorTexture->setImage(colorImage);
                     

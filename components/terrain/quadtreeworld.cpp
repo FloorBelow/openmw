@@ -279,7 +279,8 @@ namespace Terrain
 
     QuadTreeWorld::QuadTreeWorld(osg::Group* parent, osg::Group* compileRoot, Resource::ResourceSystem* resourceSystem,
         Storage* storage, unsigned int nodeMask, unsigned int preCompileMask, unsigned int borderMask,
-        int compMapResolution, float compMapLevel, float lodFactor, int vertexLodMod, float maxCompGeometrySize,
+        int compMapResolution, float compMapLevel, bool compVcolMaps, float compVcolBias, bool compNormalMaps,
+        float lodFactor, int vertexLodMod, float maxCompGeometrySize,
         bool debugChunks, ESM::RefId worldspace, double expiryDelay)
         : TerrainGrid(
             parent, compileRoot, resourceSystem, storage, nodeMask, worldspace, expiryDelay, preCompileMask, borderMask)
@@ -294,6 +295,9 @@ namespace Terrain
         mChunkManager->setCompositeMapSize(compMapResolution);
         mChunkManager->setCompositeMapLevel(compMapLevel);
         mChunkManager->setMaxCompositeGeometrySize(maxCompGeometrySize);
+        mChunkManager->setUseCompositeVcolMaps(compVcolMaps);
+        mChunkManager->setCompositeVcolMapBias(compVcolBias);
+        mChunkManager->setUseCompositeNormalMaps(compNormalMaps);
         mChunkManagers.push_back(mChunkManager.get());
 
         if (mDebugTerrainChunks)

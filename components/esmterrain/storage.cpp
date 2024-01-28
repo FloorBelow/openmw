@@ -479,6 +479,15 @@ namespace ESMTerrain
 
         normalImage.setImage(imageSize, imageSize, 1, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, normals,
             osg::Image::AllocationMode::USE_NEW_DELETE);
+
+        //should probably be turned into a setting? 16 for me has no visual impact and reduces vram usage by 60+% with vv+tr
+        if (size >= 16)
+        {
+            int newImageSize = (imageSize - 1) / 2;
+            colorImage.scaleImage(newImageSize, newImageSize, 1);
+            normalImage.scaleImage(newImageSize, newImageSize, 1);
+        }
+
     }
 
     std::string Storage::getTextureName(UniqueTextureId id)
