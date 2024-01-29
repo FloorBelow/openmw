@@ -367,7 +367,7 @@ namespace ESMTerrain
 
     void Storage::createCompositeMapImages(
         int lodLevel, float size, const osg::Vec2f& center, ESM::RefId worldspace, 
-        osg::Image& colorImage, osg::Image& normalImage)
+        osg::Image& colorImage, osg::Image& normalImage, bool useColors, bool useNormals)
     {
 
         if (lodLevel < 0 || 63 < lodLevel)
@@ -381,8 +381,13 @@ namespace ESMTerrain
         const std::size_t cellSize = static_cast<std::size_t>(ESM::getLandSize(worldspace));
         const std::size_t imageSize = static_cast<std::size_t>(size * (cellSize - 1) / sampleSize) + 1;
 
-        unsigned char* colors = new unsigned char[imageSize * imageSize * 3];
-        unsigned char* normals = new unsigned char[imageSize * imageSize * 3];
+        unsigned char* colors;
+        unsigned char* normals;
+
+        if (useColors)
+            colors = new unsigned char[imageSize * imageSize * 3];
+        if (useNormals)
+            normals = new unsigned char[imageSize * imageSize * 3];
 
         const bool alteration = useAlteration();
         const int landSizeInUnits = ESM::getCellSize(worldspace);
@@ -428,43 +433,49 @@ namespace ESMTerrain
             const std::size_t srcArrayIndex = col * cellSize * 3 + row * 3;
             const std::size_t dstArrayIndex = ((imageSize - vertY - 1) * imageSize + vertX) * 3;
 
-            osg::Vec3f normal(0, 0, 1);
-
-            if (normalData != nullptr)
+            if (useNormals)
             {
-                for (std::size_t i = 0; i < 3; ++i)
-                    normal[i] = normalData->getNormals()[srcArrayIndex + i];
+                osg::Vec3f normal(0, 0, 1);
 
-                normal.normalize();
+                if (normalData != nullptr)
+                {
+                    for (std::size_t i = 0; i < 3; ++i)
+                        normal[i] = normalData->getNormals()[srcArrayIndex + i];
+
+                    normal.normalize();
+                }
+
+                // Normals apparently don't connect seamlessly between cells
+                if (col == cellSize - 1 || row == cellSize - 1)
+                    fixNormal(normal, cellLocation, col, row, cache);
+
+                // some corner normals appear to be complete garbage (z < 0)
+                if ((row == 0 || row == cellSize - 1) && (col == 0 || col == cellSize - 1))
+                    averageNormal(normal, cellLocation, col, row, cache);
+
+                assert(normal.z() > 0);
+
+                normals[dstArrayIndex] = (unsigned char)((normal.x() / 2 + 0.5f) * 255);
+                normals[dstArrayIndex + 1] = (unsigned char)((normal.y() / 2 + 0.5f) * 255);
+                normals[dstArrayIndex + 2] = (unsigned char)((normal.z() / 2 + 0.5f) * 255);
             }
 
-            // Normals apparently don't connect seamlessly between cells
-            if (col == cellSize - 1 || row == cellSize - 1)
-                fixNormal(normal, cellLocation, col, row, cache);
+            if (useColors)
+            {
+                osg::Vec4ub color(255, 255, 255, 255);
 
-            // some corner normals appear to be complete garbage (z < 0)
-            if ((row == 0 || row == cellSize - 1) && (col == 0 || col == cellSize - 1))
-                averageNormal(normal, cellLocation, col, row, cache);
+                if (colourData != nullptr)
+                    for (std::size_t i = 0; i < 3; ++i)
+                        color[i] = colourData->getColors()[srcArrayIndex + i];
 
-            assert(normal.z() > 0);
+                // Unlike normals, colors mostly connect seamlessly between cells, but not always...
+                if (col == cellSize - 1 || row == cellSize - 1)
+                    fixColour(color, cellLocation, col, row, cache);
 
-            normals[dstArrayIndex] = (unsigned char)((normal.x() / 2 + 0.5f) * 255);
-            normals[dstArrayIndex + 1] = (unsigned char)((normal.y() / 2 + 0.5f) * 255);
-            normals[dstArrayIndex + 2] = (unsigned char)((normal.z() / 2 + 0.5f) * 255);
-
-            osg::Vec4ub color(255, 255, 255, 255);
-
-            if (colourData != nullptr)
-                for (std::size_t i = 0; i < 3; ++i)
-                    color[i] = colourData->getColors()[srcArrayIndex + i];
-
-            // Unlike normals, colors mostly connect seamlessly between cells, but not always...
-            if (col == cellSize - 1 || row == cellSize - 1)
-                fixColour(color, cellLocation, col, row, cache);
-
-            colors[dstArrayIndex] = color.r();
-            colors[dstArrayIndex + 1] = color.g();
-            colors[dstArrayIndex + 2] = color.b();
+                colors[dstArrayIndex] = color.r();
+                colors[dstArrayIndex + 1] = color.g();
+                colors[dstArrayIndex + 2] = color.b();
+            }
         };
 
         const std::size_t beginX = static_cast<std::size_t>((origin.x() - startCellX) * cellSize);
@@ -473,20 +484,14 @@ namespace ESMTerrain
 
         sampleCellGrid(cellSize, sampleSize, beginX, beginY, distance, handleSample);
 
-        colorImage.setImage(imageSize, imageSize, 1, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, colors,
-            osg::Image::AllocationMode::USE_NEW_DELETE);
+        if (useColors)
+            colorImage.setImage(imageSize, imageSize, 1, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, colors,
+                osg::Image::AllocationMode::USE_NEW_DELETE);
 
+        if (useNormals)
+            normalImage.setImage(imageSize, imageSize, 1, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, normals,
+                osg::Image::AllocationMode::USE_NEW_DELETE);
 
-        normalImage.setImage(imageSize, imageSize, 1, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, normals,
-            osg::Image::AllocationMode::USE_NEW_DELETE);
-
-        //should probably be turned into a setting? 16 for me has no visual impact and reduces vram usage by 60+% with vv+tr
-        if (size >= 16)
-        {
-            int newImageSize = (imageSize - 1) / 2;
-            colorImage.scaleImage(newImageSize, newImageSize, 1);
-            normalImage.scaleImage(newImageSize, newImageSize, 1);
-        }
 
     }
 

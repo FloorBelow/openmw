@@ -83,9 +83,12 @@ namespace Terrain
 
         void setCompositeMapSize(unsigned int size) { mCompositeMapSize = size; }
         void setCompositeMapLevel(float level) { mCompositeMapLevel = level; }
-        void setUseCompositeVcolMaps(bool b) { mUseCompositeNormalMaps = b; }
+        void setUseCompositeVcolMaps(bool b) { mUseCompositeVcolMaps = b; }
+        void setCompositeVcolMapHalfResThreshold(float threshold) { mCompositeVcolMapHalfResThreshold = threshold; }
         void setCompositeVcolMapBias(float bias) { mCompositeVcolMapBias = bias; }
         void setUseCompositeNormalMaps(bool b) { mUseCompositeNormalMaps = b; }
+        void setCompositeNormalMapHalfResThreshold(float threshold) { mCompositeNormalMapHalfResThreshold = threshold; }
+
 
         void setMaxCompositeGeometrySize(float maxCompGeometrySize) { mMaxCompGeometrySize = maxCompGeometrySize; }
 
@@ -124,8 +127,10 @@ namespace Terrain
         float mCompositeMapLevel;
         float mMaxCompGeometrySize;
         bool mUseCompositeVcolMaps;
+        float mCompositeVcolMapHalfResThreshold;
         float mCompositeVcolMapBias;
         bool mUseCompositeNormalMaps;
+        float mCompositeNormalMapHalfResThreshold;
     };
 
 }

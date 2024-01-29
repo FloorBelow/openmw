@@ -102,7 +102,7 @@ namespace ESMTerrain
             osg::Vec3Array& positions, osg::Vec3Array& normals, osg::Vec4ubArray& colours) override;
 
         void createCompositeMapImages(int lodLevel, float size, const osg::Vec2f& center, ESM::RefId worldspace,
-            osg::Image& colorImage, osg::Image& normalImage) override;
+            osg::Image& colorImage, osg::Image& normalImage, bool useColors, bool useNormals) override;
 
 
         /// Create textures holding layer blend values for a terrain chunk.

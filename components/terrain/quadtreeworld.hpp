@@ -32,7 +32,8 @@ namespace Terrain
     public:
         QuadTreeWorld(osg::Group* parent, osg::Group* compileRoot, Resource::ResourceSystem* resourceSystem,
             Storage* storage, unsigned int nodeMask, unsigned int preCompileMask, unsigned int borderMask,
-            int compMapResolution, float comMapLevel, bool compVcolMaps, float compVcolBias, bool compNormalMaps,
+            int compMapResolution, float comMapLevel, bool compVcolMaps, float compVcolHalfResThreshold, 
+            float compVcolBias, bool compNormalMaps, float compNormalHalfResThreshold,
             float lodFactor, int vertexLodMod, float maxCompGeometrySize,
             bool debugChunks, ESM::RefId worldspace, double expiryDelay);
 

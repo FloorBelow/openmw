@@ -24,10 +24,13 @@ namespace Settings
         SettingValue<int> mCompositeMapLevel{ mIndex, "Terrain", "composite map level", makeMaxSanitizerInt(-3) };
         SettingValue<int> mCompositeMapResolution{ mIndex, "Terrain", "composite map resolution",
             makeMaxSanitizerInt(1) };
-        SettingValue<bool> mCompositeVcolMaps{ mIndex, "Terrain", "composite vertex color maps" };
-        SettingValue<float> mCompositeVcolBias{ mIndex, "Terrain", "composite vertex color map bias" };
+        SettingValue<bool> mCompositeVcolMaps{ mIndex, "Terrain", "composite color maps" };
+        SettingValue<float> mCompositeVcolMapHalfResThreshold{ mIndex, "Terrain", 
+            "composite color map half res threshold" };
+        SettingValue<float> mCompositeVcolBias{ mIndex, "Terrain", "composite color map bias" };
         SettingValue<bool> mCompositeNormalMaps{ mIndex, "Terrain", "composite normal maps" };
-
+        SettingValue<float> mCompositeNormalMapHalfResThreshold{ mIndex, "Terrain",
+            "composite normal map half res threshold" };
         SettingValue<float> mMaxCompositeGeometrySize{ mIndex, "Terrain", "max composite geometry size",
             makeMaxSanitizerFloat(1) };
         SettingValue<bool> mDebugChunks{ mIndex, "Terrain", "debug chunks" };

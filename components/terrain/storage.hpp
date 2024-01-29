@@ -68,7 +68,7 @@ namespace Terrain
             = 0;
 
         virtual void createCompositeMapImages(int lodLevel, float size, const osg::Vec2f& center, ESM::RefId worldspace,
-            osg::Image& colorImage, osg::Image& normalImage)
+            osg::Image& colorImage, osg::Image& normalImage, bool useColors, bool useNormals)
             = 0;
 
         typedef std::vector<osg::ref_ptr<osg::Image>> ImageVector;
