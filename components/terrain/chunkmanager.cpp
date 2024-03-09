@@ -304,6 +304,7 @@ namespace Terrain
                     osg::ref_ptr<osg::Texture2D> normalTexture(new osg::Texture2D);
                     normalTexture->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR_MIPMAP_LINEAR);
                     normalTexture->setFilter(osg::Texture::MAG_FILTER, osg::Texture::LINEAR);
+                    normalTexture->setMaxAnisotropy(16);
                     normalTexture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
                     normalTexture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
                     normalTexture->setResizeNonPowerOfTwoHint(false);
@@ -322,6 +323,7 @@ namespace Terrain
                     osg::ref_ptr<osg::Texture2D> colorTexture(new osg::Texture2D);
                     colorTexture->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR_MIPMAP_LINEAR);
                     colorTexture->setFilter(osg::Texture::MAG_FILTER, osg::Texture::LINEAR);
+                    colorTexture->setMaxAnisotropy(16);
                     colorTexture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
                     colorTexture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
                     colorTexture->setLODBias(mCompositeVcolMapBias);

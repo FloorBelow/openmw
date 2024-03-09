@@ -1324,12 +1324,11 @@ namespace MWRender
         {
             const int compMapResolution = Settings::terrain().mCompositeMapResolution;
             const int compMapPower = Settings::terrain().mCompositeMapLevel;
-            const bool compVcolMaps = Settings::terrain().mCompositeVcolBias;
+            const bool compVcolMaps = Settings::terrain().mCompositeVcolMaps;
             const float compVcolMapHalfResThreshold = Settings::terrain().mCompositeVcolMapHalfResThreshold;
             const float compVcolMapBias = Settings::terrain().mCompositeVcolBias;
             const bool compNormalMaps = Settings::terrain().mCompositeNormalMaps;
             const float compNormalMapHalfResThreshold = Settings::terrain().mCompositeNormalMapHalfResThreshold;
-
             const float compMapLevel = std::pow(2, compMapPower);
             const int vertexLodMod = Settings::terrain().mVertexLodMod;
             const float maxCompGeometrySize = Settings::terrain().mMaxCompositeGeometrySize;
